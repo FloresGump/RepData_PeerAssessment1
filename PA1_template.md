@@ -8,16 +8,14 @@ output:
 ---
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-```
 
 
 ## 1. Loading and preprocessing the data
 The data are compressed into activity.zip file. The firs step is unzip this file in work directory, and then it include in `initable` variable.\
 
-```{r unzip file & create table, message = FALSE}
+
+```r
 library("dplyr")
 unzip(zipfile = "activity.zip")
 initable <- read.csv("activity.csv", header = TRUE, sep = ",")
@@ -25,10 +23,31 @@ initable <- tibble(initable)
 ```
 We describe the main `initable` dimensions 
 
-```{r describe table}
-str(initable)
-summary(initable)
 
+```r
+str(initable)
+```
+
+```
+## tibble [17,568 x 3] (S3: tbl_df/tbl/data.frame)
+##  $ steps   : int [1:17568] NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : chr [1:17568] "2012-10-01" "2012-10-01" "2012-10-01" "2012-10-01" ...
+##  $ interval: int [1:17568] 0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
+summary(initable)
+```
+
+```
+##      steps            date              interval     
+##  Min.   :  0.00   Length:17568       Min.   :   0.0  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8  
+##  Median :  0.00   Mode  :character   Median :1177.5  
+##  Mean   : 37.38                      Mean   :1177.5  
+##  3rd Qu.: 12.00                      3rd Qu.:1766.2  
+##  Max.   :806.00                      Max.   :2355.0  
+##  NA's   :2304
 ```
 This data set are 17568 rows (observations) and three columns (variables):
 
@@ -36,34 +55,34 @@ This data set are 17568 rows (observations) and three columns (variables):
 - **date**: The date on which the measurement was taken. Column as character. We are going to transform it as date.
 - **interval**: Identifier for the 5-minute interval in which measurement was taken. Column as integer. 
 
-```{r transform date}
-initable$date <- as.Date(initable$date, "%Y-%m-%d")
 
+```r
+initable$date <- as.Date(initable$date, "%Y-%m-%d")
 ```
 
 
 ## 2. What is mean total number of steps taken per day?
 The first step is open the ggplot library.
 
-```{r libraries, message=FALSE}
-library("ggplot2")
 
+```r
+library("ggplot2")
 ```
 
 ### 2.1 Calculate the total number of steps taken per day and its mean and median
 For this analysis, it doesn't consider the `NA` values
 
-```{r steps taken per day - TOTAL, message=FALSE, warning=FALSE}
+
+```r
 step_day <- initable %>% group_by(date) %>% summarise(total = sum(steps, na.rm=TRUE))
 mean_step <- mean(step_day$total)
 median_step <- median(step_day$total)
-
 ```
 
 ### 2.2 Generate the histogram including mean and media
 
-```{r graf_one, message=FALSE, warning=FALSE}
 
+```r
 graf_one <- ggplot(step_day, aes(total), na.rm = TRUE) +
         geom_histogram(binwidth=1000, color= "black", fill = "grey") +
         geom_rug() + 
@@ -75,14 +94,15 @@ graf_one <- ggplot(step_day, aes(total), na.rm = TRUE) +
         theme_bw() + 
         labs(title="Total steps per day", x = "Steps", y="Frecuency")
 graf_one
-
 ```
+
+![](PA1_template_files/figure-html/graf_one-1.png)<!-- -->
 
 
 ### 2.3 Result
 
-- The **mean** of total steps per day  is **`r round(mean_step,2)`**.
-- The **median** of total steps per day is **`r median_step`**.
+- The **mean** of total steps per day  is **9354.23**.
+- The **median** of total steps per day is **10395**.
 
 
 ## 3. What is the average daily activity pattern?
@@ -90,14 +110,15 @@ graf_one
 ### 3.1 Calculate the average of steps taken per five minutes interval
 For this analysis, it doesn't consider the `NA` values
 
-```{r average steps taken per interval, message=FALSE, warning=FALSE}
-step_interval <- initable %>% group_by(interval) %>% summarise(mean_interval = mean(steps, na.rm=TRUE))
 
+```r
+step_interval <- initable %>% group_by(interval) %>% summarise(mean_interval = mean(steps, na.rm=TRUE))
 ```
 
 ### 3.2 Generate plot interval.vs. means steps per each interval
 
-```{r graf_two, message=FALSE, warning=FALSE}
+
+```r
 max_mean <- max(step_interval$mean_interval)
 max_step <- step_interval$interval[step_interval$mean_interval==max_mean]
 
@@ -108,49 +129,55 @@ graf_two <- ggplot(step_interval, aes(interval, mean_interval), na.rm = TRUE) +
         theme_bw() + 
         labs(title="Mean steps per diary interval", x = "Diary Inteval (minutes)", y="Mean (Steps)")
 graf_two
-
 ```
+
+![](PA1_template_files/figure-html/graf_two-1.png)<!-- -->
 
 ### 3.3 Result
 
-The **`r max_step` minutes interval** has the maximun average steps with **`r round(max_mean,2)` steps**
+The **835 minutes interval** has the maximun average steps with **206.17 steps**
 
 
 ## 4. Imputing missing values
 
 ### 4.1 Number of missing values in the dataset 
 
-```{r numbre of NAs, message=FALSE, warning=FALSE}
-length(which(is.na(initable$steps)))
 
+```r
+length(which(is.na(initable$steps)))
+```
+
+```
+## [1] 2304
 ```
 
 ### 4.2 New data set considering the missing values 
 **Criteria**: Replace missing values with the day mean in a new data set named `newtable`
 
-```{r new data set, message=FALSE, warning=FALSE}
+
+```r
 na_data <- which(is.na(initable$steps))
 newtable <- initable
 for (i in na_data) {
         int <- newtable$interval[i]
         newtable$steps[i] <- step_interval$mean_interval[step_interval$interval == int]
 }
-
 ```
 
 
 ### 4.3 Calculate and generate histogram with the new data set
 
-```{r steps taken per day - NEW TABLE, message=FALSE, warning=FALSE}
+
+```r
 newstep_day <- newtable %>% group_by(date) %>% summarise(total = sum(steps))
 newmean_step <- mean(newstep_day$total)
 newmedian_step <- median(newstep_day$total)
-
 ```
 
 We generate the same histogram that 2.2
 
-```{r newgraf_one, message=FALSE, warning=FALSE}
+
+```r
 newgraf_one <- ggplot(newstep_day, aes(total)) +
             geom_histogram(binwidth=1000, color= "black", fill = "grey") +
             geom_rug() + 
@@ -162,8 +189,9 @@ newgraf_one <- ggplot(newstep_day, aes(total)) +
             theme_bw() + 
             labs(title="Total steps per day", subtitle="NAs were changed with its step mean per interval", x = "Steps", y="Frecuency")
 newgraf_one
-
 ```
+
+![](PA1_template_files/figure-html/newgraf_one-1.png)<!-- -->
 
 ### 4.4 Result
 The used criteria about missing values lead to increasing mean and median step per day.
@@ -173,18 +201,19 @@ In this case, mean and median step per day are similar. The distribution is sime
 ## 5. Are there differences in activity patterns between weekdays and weekends?
 
 ### 5.1 Create new factor (weekday/weekend)
-```{r weekend, message=FALSE, warning=FALSE}
+
+```r
 newtable <- newtable %>% 
             mutate(day = weekdays(date)) %>%
             mutate (week ="weekday") %>%
             mutate (week = replace(week, day=="domingo" | day=="sábado", "weekend")) %>%
             group_by(week, interval) %>%
             summarize(totweek = mean(steps))
-
 ```
 
 ### 5.2 Plot time serie
-```{r graf_three, message=FALSE, warning=FALSE}
+
+```r
 graf_three <- ggplot(data = newtable, aes(interval,totweek), fill=week) +
         geom_line (color="blue") +
         facet_grid(week~.) +
@@ -192,8 +221,9 @@ graf_three <- ggplot(data = newtable, aes(interval,totweek), fill=week) +
         labs(title="Mean steps per diary interval", x = "Diary Inteval (minutes)", y="Mean (Steps)") +
         theme(legend.position="none")
 graf_three
-
 ```
+
+![](PA1_template_files/figure-html/graf_three-1.png)<!-- -->
 
 ### 5.3 Results
 
